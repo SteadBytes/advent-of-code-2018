@@ -20,7 +20,7 @@ def play_marbles(n_players, final_marble):
                 circle.rotate(-1)
             else:
                 circle.rotate(-1)
-                    circle.append(next_marble)
+                circle.append(next_marble)
             next_marble += 1
             if next_marble > final_marble:
                 return players
@@ -38,8 +38,8 @@ def part_1(n_players, final_marble):
     return get_winning_elf_score(n_players, final_marble)
 
 
-def part_2():
-    pass
+def part_2(n_players, final_marble):
+    return get_winning_elf_score(n_players, final_marble * 100)
 
 
 def main(puzzle_input_f):
@@ -47,7 +47,7 @@ def main(puzzle_input_f):
     n_players, final_marble = int(l[0]), int(l[6])
 
     print("Part 1: ", part_1(n_players, final_marble))
-    print("Part 2: ", part_2())
+    print("Part 2: ", part_2(n_players, final_marble))
 
 
 if __name__ == "__main__":
