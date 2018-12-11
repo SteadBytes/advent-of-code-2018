@@ -1,5 +1,6 @@
-from copy import deepcopy
 from collections import defaultdict
+
+GRID_LIMIT = 300
 
 
 def cell_power(x, y, serial_number):
@@ -20,34 +21,17 @@ def build_partial_sums(serial_number):
             - partial_sums[x - 1, y - 1]
         )
 
-    for y in range(300):
-        for x in range(300):
+    for y in range(GRID_LIMIT):
+        for x in range(GRID_LIMIT):
             partial_sums[x, y] = ps(x, y)
     return partial_sums
 
 
-def part_1(partial_sums):
-    width = height = 3
+def find_max_square(partial_sums, size_min=3, size_max=4):
     grid_sums = {}
-    for y in range(300):
-        for x in range(300):
-            grid_sums[x, y] = (
-                partial_sums[x, y]
-                + partial_sums[x - width, y - height]
-                - partial_sums[x - width, y]
-                - partial_sums[x, y - height]
-            )
-
-    max_pos = max(grid_sums, key=grid_sums.get)
-    max_sum = grid_sums[max_pos]
-    return max_pos[0] - 2, max_pos[1] - 2
-
-
-def part_2(partial_sums):
-    grid_sums = {}
-    for s in range(2, 300):
-        for y in range(s - 1, 300):
-            for x in range(s - 1, 300):
+    for s in range(size_min, size_max):
+        for y in range(s - 1, GRID_LIMIT):
+            for x in range(s - 1, GRID_LIMIT):
                 grid_sums[x - s + 1, y - s + 1, s] = (
                     partial_sums[x, y]
                     + partial_sums[x - s, y - s]
@@ -58,6 +42,14 @@ def part_2(partial_sums):
     max_pos = max(grid_sums, key=grid_sums.get)
     max_sum = grid_sums[max_pos]
     return max_pos[0], max_pos[1], max_pos[2]
+
+
+def part_1(partial_sums):
+    return find_max_square(partial_sums)[:2]
+
+
+def part_2(partial_sums):
+    return find_max_square(partial_sums, 2, 301)
 
 
 def main(puzzle_input_f):
