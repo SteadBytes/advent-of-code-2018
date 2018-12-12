@@ -24,8 +24,30 @@ def part_1(initial_state, rules):
     return sum_plants(state, len(initial_state))
 
 
-def part_2():
-    pass
+def part_2(initial_state, rules):
+    """ Change in sum of plants evenutally stabilises to a constant value. Find
+    this value through generating patterns as in part 1 then calculate what the
+    final sum after 50000000000 generations would be.
+    """
+    states = gen_state(initial_state, rules)
+    stable_diffs_threshold = 100
+
+    prev_sum = sum_plants(initial_state, len(initial_state))
+    prev_diff = 0
+    continuous_equal_diffs = 0
+    for i, state in enumerate(states, 1):
+        next_sum = sum_plants(state, len(initial_state))
+        diff = next_sum - prev_sum
+        if diff == prev_diff:
+            continuous_equal_diffs += 1
+        else:
+            continuous_equal_diffs = 0
+
+        prev_diff = diff
+        prev_sum = next_sum
+
+        if continuous_equal_diffs == stable_diffs_threshold:
+            return (50000000000 - i) * prev_diff + prev_sum
 
 
 def main(puzzle_input_f):
@@ -39,7 +61,7 @@ def main(puzzle_input_f):
         rules[tuple([ch == "#" for ch in pattern])] = result == "#"
 
     print("Part 1: ", part_1(initial_state, rules))
-    print("Part 2: ", part_2())
+    print("Part 2: ", part_2(initial_state, rules))
 
 
 if __name__ == "__main__":
