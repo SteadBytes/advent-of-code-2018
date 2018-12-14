@@ -58,15 +58,14 @@ def part_2():
     pass
 
 
+def init_carts_and_tracks(input_lines):
 cart_directions = {"<": -1, "v": +1j, ">": 1, "^": -1j}
 cart_tracks = {"<": "-", "v": "|", ">": "-", "^": "|"}
 
-
-def main(puzzle_input_f):
     tracks = defaultdict(str)
     carts = []
 
-    for y, row in enumerate(puzzle_input_f.readlines()):
+    for y, row in enumerate(input_lines):
         for x, ch in enumerate(row):
             pos = x + y * 1j
             if ch in cart_directions:
@@ -78,8 +77,12 @@ def main(puzzle_input_f):
             if track in "\\/+":
                 tracks[(pos)] = track
 
-    print("Part 1: ", part_1(carts, tracks))
-    print("Part 2: ", part_2())
+    return carts, tracks
+
+
+def main(puzzle_input_f):
+    lines = puzzle_input_f.readlines()
+    print("Part 1: ", part_1(*init_carts_and_tracks(lines)))
 
 
 if __name__ == "__main__":
