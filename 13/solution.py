@@ -8,6 +8,7 @@ class Cart:
         self.position = position
         self.direction = direction
         self.next_turn = "L"
+        self.crashed = False
 
     def __str__(self):
         return f"({self.position}, {self.direction})"
@@ -54,13 +55,26 @@ def part_1(carts, tracks):
             cart.turn(track)
 
 
-def part_2():
-    pass
+def part_2(carts, tracks):
+    while len(carts) > 1:
+        carts.sort(key=lambda cart: (cart.position.imag, cart.position.real))
+        for cart in (c for c in carts if not c.crashed):
+            cart.position += cart.direction
+            for cart2 in (c for c in carts if c != cart):
+                if cart2.position == cart.position and not cart2.crashed:
+                    cart.crashed = True
+                    cart2.crashed = True
+                    break
+            track = tracks[cart.position]
+            cart.turn(track)
+        carts = [c for c in carts if not c.crashed]
+    p = carts[0].position
+    return (int(p.real), int(p.imag))
 
 
 def init_carts_and_tracks(input_lines):
-cart_directions = {"<": -1, "v": +1j, ">": 1, "^": -1j}
-cart_tracks = {"<": "-", "v": "|", ">": "-", "^": "|"}
+    cart_directions = {"<": -1, "v": +1j, ">": 1, "^": -1j}
+    cart_tracks = {"<": "-", "v": "|", ">": "-", "^": "|"}
 
     tracks = defaultdict(str)
     carts = []
@@ -83,6 +97,7 @@ cart_tracks = {"<": "-", "v": "|", ">": "-", "^": "|"}
 def main(puzzle_input_f):
     lines = puzzle_input_f.readlines()
     print("Part 1: ", part_1(*init_carts_and_tracks(lines)))
+    print("Part 2: ", part_2(*init_carts_and_tracks(lines)))
 
 
 if __name__ == "__main__":
