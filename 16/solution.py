@@ -84,27 +84,27 @@ opcodes = [
     eqrr,
 ]
 
-
-def possible_opcodes(inst, before, after):
-    A, B, C = inst[1:]
-    return [opcode for opcode in opcodes if opcode(A, B, before) == after[C]]
+Sample = namedtuple("Sample", ["inst", "before", "after"])
 
 
-def parse_samples_lines(samples_lines):
+def possible_opcodes(s: Sample):
+    A, B, C = s.inst[1:]
+    return [opcode for opcode in opcodes if opcode(A, B, s.before) == s.after[C]]
+
+
+def parse_samples_input(samples_input):
     samples = []
-    for sample in samples_lines.split("\n\n"):
+    for sample in samples_input.split("\n\n"):
         before, inst, after = [
             [int(x) for x in re.findall(r"\d+", s)] for s in sample.split("\n")
         ]
-        samples.append({"before": before, "inst": inst, "after": after})
+        samples.append(Sample(inst, before, after))
 
     return samples
 
 
 def part_1(samples):
-    possible_ops = [
-        possible_opcodes(s["inst"], s["before"], s["after"]) for s in samples
-    ]
+    possible_ops = [possible_opcodes(s) for s in samples]
 
     return len([s for s in possible_ops if len(s) >= 3])
 
@@ -114,8 +114,8 @@ def part_2():
 
 
 def main(puzzle_input_f):
-    samples_lines, program_lines = puzzle_input_f.read().split("\n\n\n")
-    samples = parse_samples_lines(samples_lines)
+    samples_input, program_input = puzzle_input_f.read().split("\n\n\n")
+    samples = parse_samples_input(samples_input)
 
     print("Part 1: ", part_1(samples))
     print("Part 2: ", part_2())
