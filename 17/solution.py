@@ -35,7 +35,7 @@ class Simulation:
         beneath = p + Direction.DOWN.value
 
         if not self.clay[beneath]:
-            if beneath not in self.flowing and self._point_in_bounds(beneath):
+            if beneath not in self.flowing and 1 <= beneath.y <= self.y_max:
                 self.flow(beneath, Direction.DOWN)
             if beneath not in self.settled:
                 return False
@@ -65,18 +65,17 @@ class Simulation:
             return True
         return False
 
-    def _point_in_bounds(self, p: Point):
-        return 1 <= p.y <= self.y_max
+    def in_bounds(self, p: Point):
+        return self.y_min <= p.y <= self.y_max
 
 
-def part_1(clay):
-    sim = Simulation(clay)
-    sim.run()
-    return len([p for p in sim.flowing | sim.settled if sim.y_min <= p.y <= sim.y_max])
+def part_1(completed_sim):
+    water = (p for p in completed_sim.flowing | completed_sim.settled)
+    return len([p for p in water if completed_sim.in_bounds(p)])
 
 
-def part_2():
-    pass
+def part_2(completed_sim):
+    return len([p for p in completed_sim.settled if completed_sim.in_bounds(p)])
 
 
 def main(puzzle_input_f):
@@ -95,9 +94,10 @@ def main(puzzle_input_f):
         else:
             for x in range(*vein_range):
                 clay[Point(x, vein_start)] = True
-
-    print("Part 1: ", part_1(clay))
-    print("Part 2: ", part_2())
+    sim = Simulation(clay)
+    sim.run()
+    print("Part 1: ", part_1(sim))
+    print("Part 2: ", part_2(sim))
 
 
 if __name__ == "__main__":
