@@ -44,9 +44,8 @@ def parse_input(lines):
     return trees, lumberyard, size
 
 
-def part_1(input_lines):
-    trees, lumberyard, size = parse_input(input_lines)
-    for _ in range(10):
+def gen_acres(trees, lumberyard, size):
+    while True:
         next_trees = set()
         next_lumberyard = set()
 
@@ -69,18 +68,47 @@ def part_1(input_lines):
                         next_trees.add(p)
         trees = next_trees
         lumberyard = next_lumberyard
+        yield frozenset(trees), frozenset(lumberyard)
+
+
+def part_1(input_lines):
+    trees, lumberyard, size = parse_input(input_lines)
+    g = gen_acres(trees, lumberyard, size)
+    for _ in range(10):
+        trees, lumberyard = next(g)
     return len(trees) * len(lumberyard)
 
 
-def part_2():
-    pass
+def part_2(input_lines):
+    trees, lumberyard, size = parse_input(input_lines)
+    g = gen_acres(trees, lumberyard, size)
+
+    # grid eventually enters repeating cycle
+    # find interval of repeat
+    seen = set()
+    repeat_i = None
+    for i, next_acres in enumerate(g):
+        if next_acres in seen:
+            if repeat_i is None:
+                repeat_i = i
+            else:
+                break
+            seen = set()
+        seen.add(next_acres)
+
+    repeat_interval = i - repeat_i
+    # generator currently at first state of the repeating cycle
+    # now can 'repeat' process for part 1
+    for _ in range(100000000 % repeat_interval):
+        trees, lumberyard = next(g)
+    return len(trees) * len(lumberyard)
 
 
 def main(puzzle_input_f):
     lines = puzzle_input_f.read().splitlines()
 
     print("Part 1: ", part_1(lines))
-    print("Part 2: ", part_2())
+    print("Part 2: ", part_2(lines))
 
 
 if __name__ == "__main__":
