@@ -15,11 +15,11 @@ class Point(namedtuple("Point", ["y", "x"])):
 
 
 class Unit:
-    def __init__(self, pos: Point, team):
+    def __init__(self, pos: Point, team, ap=3):
         self.pos = pos
         self.team = team
         self.hp = 200
-        self.ap = 3
+        self.ap = ap
 
     def __repr__(self):
         return "Unit(team={}, pos={}, hp={}, ap={})".format(
@@ -29,6 +29,10 @@ class Unit:
     @property
     def alive(self):
         return self.hp > 0
+
+
+class ElfDeadError(Exception):
+    pass
 
 
 def show_arena(arena):
@@ -114,7 +118,7 @@ def do_move(unit, arena):
     arena[unit.pos] = unit
 
 
-def do_round(elves, goblins, arena):
+def do_round(elves, goblins, arena, part_2=False):
 
     full_round = True
     for unit in sorted(elves + goblins, key=lambda u: u.pos):
@@ -129,11 +133,13 @@ def do_round(elves, goblins, arena):
             target_unit.hp -= unit.ap
             if not target_unit.alive:
                 del arena[target_unit.pos]
+                if part_2 and target_unit.team == "E":
+                    raise ElfDeadError
 
     return filter_alive(elves), filter_alive(goblins), arena, full_round
 
 
-def parse_input(lines):
+def parse_input(lines, elf_ap=3):
     elves = []
     goblins = []
     arena = defaultdict(bool)
@@ -144,7 +150,7 @@ def parse_input(lines):
             if ch == "#":
                 arena[pt] = True
             elif ch in "GE":
-                unit = Unit(pt, ch)
+                unit = Unit(pt, ch, elf_ap if ch == "E" else 3)
                 {"G": goblins, "E": elves}[ch].append(unit)
                 arena[pt] = unit
     return elves, goblins, arena
@@ -163,14 +169,34 @@ def part_1(lines):
     return r * hp_sum
 
 
-def part_2():
-    pass
+def part_2(lines):
+    elf_ap = 4
+
+    elf_dead = True
+    while elf_dead:
+        elves, goblins, arena = parse_input(lines, elf_ap=elf_ap)
+
+        r = 0
+        elf_dead = False
+        while elves and goblins:
+            try:
+                elves, goblins, arena, full_round = do_round(
+                    elves, goblins, arena, part_2=True
+                )
+                if full_round:
+                    r += 1
+            except ElfDeadError:
+                elf_dead = True
+                break
+        elf_ap += 1
+    hp_sum = sum(u.hp for u in elves + goblins)
+    return r * hp_sum
 
 
 def main(puzzle_input_f):
     lines = [l.strip() for l in puzzle_input_f.readlines() if l]
     print("Part 1 ", part_1(lines))
-    print("Part 2 ", part_2())
+    print("Part 2 ", part_2(lines))
 
 
 if __name__ == "__main__":
