@@ -1,31 +1,29 @@
-from enum import Enum
-from collections import namedtuple, deque
-from pprint import pprint
+from collections import defaultdict, deque, namedtuple
 
 
-class UnitType(Enum):
-    ELF = 1
-    GOBLIN = 2
+class Point(namedtuple("Point", ["y", "x"])):
+    """ Order of y,x swapped from usual x,y to enable sorting in reading order
+    by default
+    """
 
+    def __add__(self, other):
+        return Point(self.y + other.y, self.x + other.x)
 
-class NoTargetsException(Exception):
-    pass
-
-
-Point = namedtuple("Point", ["x", "y"])
+    def adjacent(self):
+        vels = [Point(*v) for v in [(-1, 0), (0, -1), (0, 1), (1, 0)]]
+        return [self + v for v in vels]
 
 
 class Unit:
-    def __init__(self, unit_type: UnitType, position: Point):
-        self.unit_type = unit_type
-        self.position = position
-
+    def __init__(self, pos: Point, team):
+        self.pos = pos
+        self.team = team
         self.hp = 200
         self.ap = 3
 
     def __repr__(self):
-        return "Unit(unit_type={}, position={}, hp={}, ap={})".format(
-            self.unit_type.name, self.position, self.hp, self.ap
+        return "Unit(team={}, pos={}, hp={}, ap={})".format(
+            self.team, self.pos, self.hp, self.ap
         )
 
     @property
@@ -33,152 +31,146 @@ class Unit:
         return self.hp > 0
 
 
-def adj_points(p: Point):
-    vels = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-    return (Point(p.x + vx, p.y + vy) for vx, vy in vels)
+def show_arena(arena):
+    y_max = max(p.y for p in arena.keys())
+    x_max = max(p.x for p in arena.keys())
+
+    for y in range(y_max + 1):
+        l = []
+        l_summary = []
+        for x in range(x_max + 1):
+            e = arena[Point(y, x)]
+            if type(e) is bool:
+                l.append("#" if e else ".")
+            else:
+                l.append(e.team)
+                l_summary.append(f"{e.team}({e.hp})")
+        print("".join(l), ", ".join(l_summary))
 
 
-def part_1():
-    pass
+def filter_alive(units):
+    return [u for u in units if u.alive]
+
+
+def find_target(unit, elves, goblins):
+    enemies = goblins if unit.team == "E" else elves
+
+    in_range = sorted(
+        [e for e in filter_alive(enemies) if e.pos in unit.pos.adjacent()],
+        key=lambda u: (u.hp, u.pos),
+    )
+
+    if in_range:
+        return in_range[0]
+
+
+def find_closest_enemy(unit, arena):
+    Q = deque()
+    parents = {}
+    distances = {}
+
+    for p in unit.pos.adjacent():
+        Q.append(p)
+        parents[p] = unit.pos
+        distances[p] = 1
+
+    closest = None
+    while len(Q) > 0:
+        p = Q.popleft()
+        is_unit = type(arena[p]) == Unit
+
+        if is_unit and arena[p].team != unit.team:
+            closest = p
+            break
+
+        if is_unit or arena[p] is True:
+            continue
+
+        for pt in p.adjacent():
+            if pt not in parents:
+                parents[pt] = p
+                distances[pt] = distances[p] + 1
+                Q.append(pt)
+
+    if closest is None:
+        return None, None, None
+
+    p = closest
+    move = parents[closest]
+    while move != unit.pos:
+        p = move
+        move = parents[p]
+    return closest, p, distances[closest]
+
+
+def do_move(unit, arena):
+    closest_enemy, move, distance = find_closest_enemy(unit, arena)
+
+    if move is None or move == unit.pos or distance < 2:
+        return
+
+    del arena[unit.pos]
+    unit.pos = move
+    arena[unit.pos] = unit
+
+
+def do_round(elves, goblins, arena):
+
+    full_round = True
+    for unit in sorted(elves + goblins, key=lambda u: u.pos):
+        if not unit.alive:  # died during round
+            continue
+        if not filter_alive(elves) or not filter_alive(goblins):
+            full_round = False
+            break
+        do_move(unit, arena)
+        target_unit = find_target(unit, elves, goblins)
+        if target_unit:
+            target_unit.hp -= unit.ap
+            if not target_unit.alive:
+                del arena[target_unit.pos]
+
+    return filter_alive(elves), filter_alive(goblins), arena, full_round
+
+
+def parse_input(lines):
+    elves = []
+    goblins = []
+    arena = defaultdict(bool)
+
+    for y, row in enumerate(lines):
+        for x, ch in enumerate(row):
+            pt = Point(y, x)
+            if ch == "#":
+                arena[pt] = True
+            elif ch in "GE":
+                unit = Unit(pt, ch)
+                {"G": goblins, "E": elves}[ch].append(unit)
+                arena[pt] = unit
+    return elves, goblins, arena
+
+
+def part_1(lines):
+    elves, goblins, arena = parse_input(lines)
+
+    r = 0
+    while elves and goblins:
+        elves, goblins, arena, full_round = do_round(elves, goblins, arena)
+        if full_round:
+            r += 1
+
+    hp_sum = sum(u.hp for u in elves + goblins)
+    return r * hp_sum
 
 
 def part_2():
     pass
 
 
-def reading_order(p: Point):
-    return (p.y, p.x)
-
-
-def print_grid(grid, units):
-    alive = [u for u in units if u.alive]
-    prev_y = 0
-    line = []
-
-    def output_line():
-        units_on_line = sorted(
-            [u for u in alive if u.position.y == prev_y], key=lambda u: u.position.x
-        )
-        unit_summary = [
-            "{}({})".format("E" if u.unit_type == UnitType.ELF else "G", u.hp)
-            for u in units_on_line
-        ]
-        print("".join(line) + "\t" + ", ".join(unit_summary))
-
-    for pos in sorted(grid, key=reading_order):
-        if prev_y != pos.y:
-            output_line()
-            line = []
-        unit_at_pos = [u for u in alive if u.position == pos]
-        if unit_at_pos:
-            unit = unit_at_pos[0]
-            line.append("E" if unit.unit_type == UnitType.ELF else "G")
-        else:
-            wall = grid[pos]
-            line.append("#" if wall else ".")
-        prev_y = pos.y
-    output_line()
-
-
 def main(puzzle_input_f):
     lines = [l.strip() for l in puzzle_input_f.readlines() if l]
-    # parse input into list of units and dict representing grid
-    units = []
-
-    grid = {}
-
-    char_unit_types = {"E": UnitType.ELF, "G": UnitType.GOBLIN}
-    for i, row in enumerate(lines):
-        for j, ch in enumerate(row):
-            grid[Point(i, j)] = ch == "#"
-
-            if ch in char_unit_types:
-                unit_type = char_unit_types[ch]
-                units.append(Unit(unit_type, Point(i, j)))
-
-    def find_move(unit: Unit, targets):
-        # BFS
-        QueueItem = namedtuple("QueueItem", ["pos", "dist"])
-        PositionInfo = namedtuple("PositionInfo", ["dist", "parent"])
-
-        Q = deque([QueueItem(unit.position, 0)])
-        position_info = {unit.position: PositionInfo(0, None)}
-        visited = set()
-        occupied_positions = {u.position for u in units if u.alive}
-
-        while Q:
-            curr = Q.popleft()
-            for p in adj_points(curr.pos):
-                if grid[p] or p in occupied_positions:
-                    continue
-                p_dist = curr.dist + 1
-                current_best = position_info.get(p)
-                curr_info = PositionInfo(p_dist, curr.pos)
-                if not current_best or current_best > curr_info:
-                    position_info[p] = curr_info
-
-                if p in visited:
-                    continue
-
-                if not any(p == v.pos for v in Q):
-                    Q.append(QueueItem(p, p_dist))
-            visited.add(curr.pos)
-
-        try:
-            min_dist, closest = min(
-                (pi.dist, pos) for pos, pi in position_info.items() if pos in targets
-            )
-        except ValueError:
-            return
-
-        while position_info[closest].dist > 1:
-            closest = position_info[closest].parent
-
-        return closest
-
-    def move(unit: Unit):
-        targets = [u for u in units if unit.unit_type != u.unit_type and u.alive]
-        if not targets:
-            raise NoTargetsException
-
-        occupied_positions = {u.position for u in units if u.alive and u != unit}
-
-        in_range = {
-            p
-            for t in targets
-            for p in adj_points(t.position)
-            if p not in occupied_positions and not grid[p]
-        }
-        if unit.position not in in_range:
-            move = find_move(unit, in_range)
-            if move:
-                unit.position = move
-
-        enemies = [t for t in targets if t.position in adj_points(unit.position)]
-        if enemies:
-            chosen = min(enemies, key=lambda u: (u.hp, reading_order(u.position)))
-            chosen.hp -= unit.ap
-
-    def simulate_round():
-        alive = [u for u in units if u.alive]
-        for unit in sorted(alive, key=lambda u: reading_order(u.position)):
-            move(unit)
-
-    rounds = 0
-    while True:
-        print_grid(grid, units)
-        print()
-        try:
-            simulate_round()
-        except NoTargetsException:
-            break
-        rounds += 1
-
-    print(rounds)
-    print(rounds * sum(u.hp for u in units if u.alive))
-
-    print("Part 1: ", part_1())
-    print("Part 2: ", part_2())
+    print("Part 1 ", part_1(lines))
+    print("Part 2 ", part_2())
 
 
 if __name__ == "__main__":
