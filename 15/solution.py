@@ -156,12 +156,12 @@ def parse_input(lines, elf_ap=3):
     return elves, goblins, arena
 
 
-def part_1(lines):
-    elves, goblins, arena = parse_input(lines)
-
+def simulate_battle(elves, goblins, arena, part_2=False):
     r = 0
     while elves and goblins:
-        elves, goblins, arena, full_round = do_round(elves, goblins, arena)
+        elves, goblins, arena, full_round = do_round(
+            elves, goblins, arena, part_2=part_2
+        )
         if full_round:
             r += 1
 
@@ -169,28 +169,20 @@ def part_1(lines):
     return r * hp_sum
 
 
+def part_1(lines):
+    elves, goblins, arena = parse_input(lines)
+    return simulate_battle(elves, goblins, arena)
+
+
 def part_2(lines):
     elf_ap = 4
 
-    elf_dead = True
-    while elf_dead:
+    while True:
         elves, goblins, arena = parse_input(lines, elf_ap=elf_ap)
-
-        r = 0
-        elf_dead = False
-        while elves and goblins:
-            try:
-                elves, goblins, arena, full_round = do_round(
-                    elves, goblins, arena, part_2=True
-                )
-                if full_round:
-                    r += 1
-            except ElfDeadError:
-                elf_dead = True
-                break
-        elf_ap += 1
-    hp_sum = sum(u.hp for u in elves + goblins)
-    return r * hp_sum
+        try:
+            return simulate_battle(elves, goblins, arena, part_2=True)
+        except ElfDeadError:
+            elf_ap += 1
 
 
 def main(puzzle_input_f):
