@@ -77,7 +77,8 @@ def choose_target(g: Group, targets):
     def target_sort(t):
         return (-calc_damage(g, t), -t.ep, -t.initiative)
 
-    return sorted(targets, key=target_sort)[0]
+    target = sorted(targets, key=target_sort)[0]
+    return target if calc_damage(g, target) > 0 else None
 
 
 def print_attacks(attacks):
@@ -100,6 +101,7 @@ def do_round(immune_sys, infection, verbose=False):
         targets = [e for e in enemies if e.global_id not in targeted]
         if targets:
             target = choose_target(g, targets)
+            if target:
             targeted.add(target.global_id)
             fights[g.global_id] = target
 
