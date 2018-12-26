@@ -1,5 +1,10 @@
 import re
+from copy import deepcopy
 from dataclasses import dataclass, field
+
+
+class RoundTiedError(Exception):
+    pass
 
 
 @dataclass
@@ -102,18 +107,20 @@ def do_round(immune_sys, infection, verbose=False):
         if targets:
             target = choose_target(g, targets)
             if target:
-            targeted.add(target.global_id)
-            fights[g.global_id] = target
+                targeted.add(target.global_id)
+                fights[g.global_id] = target
 
     if verbose:
         attacks = []
-
+    tie = True
     for g in sorted(groups, key=lambda g: -g.initiative):
         if g.global_id not in fights:
             continue
         target = fights[g.global_id]
         damage = calc_damage(g, target)
         killed = min(target.units, damage // target.hp)
+        if killed > 0:
+            tie = False
         target.units -= killed
 
         if verbose:
@@ -123,33 +130,52 @@ def do_round(immune_sys, infection, verbose=False):
         print_attacks(attacks)
         print()
 
+    if tie:
+        raise RoundTiedError()
+
     immune_sys = [g for g in immune_sys if g.units > 0]
     infection = [g for g in infection if g.units > 0]
 
     return immune_sys, infection
 
 
-def part_1(immune_sys, infection):
+def do_battle(immune_sys, infection):
     while True:
         immune_sys, infection = do_round(immune_sys, infection)
         immune_sys_units = sum(g.units for g in immune_sys)
         infection_units = sum(g.units for g in infection)
 
         if immune_sys_units == 0:
-            return infection_units
+            return "infection", infection_units
         if infection_units == 0:
-            return immune_sys_units
+            return "immune_sys", immune_sys_units
 
 
-def part_2():
-    pass
+def part_1(immune_sys, infection):
+    winner, num_units = do_battle(immune_sys, infection)
+    return num_units
+
+
+def part_2(immune_sys, infection):
+    boost = 0
+    while True:
+        boost_immune_sys = deepcopy(immune_sys)
+        for g in boost_immune_sys:
+            g.ap += boost
+        try:
+            winner, num_units = do_battle(boost_immune_sys, deepcopy(infection))
+            if winner == "immune_sys":
+                return num_units
+        except RoundTiedError:
+            pass
+        boost += 1
 
 
 def main(puzzle_input_f):
     verbose = False
     immune_sys, infection = parse_input(puzzle_input_f.read())
-    print("Part 1: ", part_1(immune_sys, infection))
-    print("Part 2: ", part_2())
+    print("Part 1: ", part_1(deepcopy(immune_sys), deepcopy(infection)))
+    print("Part 2: ", part_2(immune_sys, infection))
 
 
 if __name__ == "__main__":
