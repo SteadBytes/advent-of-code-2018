@@ -102,7 +102,7 @@ opcodes = {
     "band": banr,
     "bani": bani,
     "borr": borr,
-    "borri": bori,
+    "bori": bori,
     "setr": setr,
     "seti": seti,
     "gtir": gtir,
@@ -114,31 +114,67 @@ opcodes = {
 }
 
 
-def part_1(ip_reg, instructions):
+def sum_factors(n):
+    return sum(
+        {x for i in range(1, int(n ** 0.5) + 1) if n % i == 0 for x in (i, n // i)}
+    )
+
+
+def simulate_program(ip_reg, instructions, r0=0, verbose=False):
     r = [0] * 6
+    r[0] = r0
     r[ip_reg] = 0
     ip = 0
     while ip < len(instructions):
         opcode, (A, B, C) = instructions[ip]
         r[ip_reg] = ip
+
+        if verbose:
+            l = f"ip={ip} {r} {opcode} {A} {B} {C}"
+
         r[C] = opcodes[opcode](A, B, r)
         ip = r[ip_reg]
         ip += 1
+        if verbose:
+            print(f"{l} {r}")
     return r[0]
 
 
-def part_2(ip_reg, instructions):
-    r = [0] * 6
-    r[0] = 1
-    r[ip_reg] = 0
-    ip = 0
-    while ip < len(instructions):
-        opcode, (A, B, C) = instructions[ip]
-        r[ip_reg] = ip
-        r[C] = opcodes[opcode](A, B, r)
-        ip = r[ip_reg]
-        ip += 1
-    return r[0]
+def part_1(ip_reg, instructions, simulate=True, verbose=False):
+    """ Program calculates the sum of the factors of a number. The number is
+    stored in register 5 and is calculated during a 'setup' phase. For part 1,
+    this value is 981.
+
+    The main algorithm of the program converted to Python:
+    ```
+    n = 981
+    r = 0
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            if i * j == n:
+                r += 1
+    return r
+    ```
+
+    When simulate=True, the program is simulated by running
+    the instructions against an in-memory register and returning the result
+    from register 0.
+
+    When simulate=False, the sum_factors python function is called to produce
+    the answer without simulating the program.
+    """
+    if simulate:
+        return simulate_program(ip_reg, instructions, verbose=verbose)
+    else:
+        return sum_factors(981)
+
+
+def part_2():
+    """ Setting register 0 to 1 acts as a flag to use a 10551381 as the value
+    to calculate the sum of factors for. The program implements this very
+    naively and as such will take a very long time to complete.
+    """
+    return sum_factors(10_551_381)
 
 
 def main(puzzle_input_f):
@@ -148,8 +184,8 @@ def main(puzzle_input_f):
         for l in puzzle_input_f.read().splitlines()
     ]
 
-    print("Part 1: ", part_1(ip_reg, instructions))
-    print("Part 2: ", part_2(ip_reg, instructions))
+    print("Part 1: ", part_1(ip_reg, instructions, simulate=True))
+    print("Part 2: ", part_2())
 
 
 if __name__ == "__main__":
