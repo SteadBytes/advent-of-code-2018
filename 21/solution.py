@@ -134,8 +134,13 @@ def simulate_program(ip_reg, instructions, r0=0, verbose=False):
     return r[0]
 
 
-def part_1():
+def program(part_1=True):
+    """ Reverse engineered from Elf code source with additions for solving the
+    puzzles.
+    """
     r3 = 0
+    prev_halt_r3 = 0
+    s = set()
     while True:
         r4 = r3 | 65536
         r3 = 1_107_552
@@ -146,12 +151,28 @@ def part_1():
             r3 *= 65899
             r3 &= 16_777_215
             if 256 > r4:
-                return r3
-            r4 = r4 // 256
+                if part_1:
+                    return r3
+                else:
+                    # track values of r3 that would cause halt
+                    # when no more values added the previous value that caused
+                    # a halt will be the value that causes the most instructions
+                    # to be executed
+                    prev_s = {x for x in s}
+                    s.add(r3)
+                    prev_halt_r3 = prev_halt_r3 if r3 in prev_s else r3
+                    if prev_s == s:
+                        return prev_halt_r3
+                    break
+            r4 = r4 // 256  # additional optimisation
+
+
+def part_1():
+    return program()
 
 
 def part_2():
-    pass
+    return program(part_1=False)
 
 
 def main(puzzle_input_f):
