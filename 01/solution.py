@@ -1,5 +1,5 @@
 def parse_frequencies(puzzle_input):
-    return [float(f) for f in puzzle_input.readlines()]
+    return [int(f) for f in puzzle_input.readlines()]
 
 
 def part_1(frequencies):
