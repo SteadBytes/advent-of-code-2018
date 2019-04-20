@@ -12,7 +12,7 @@ def parse_minute(record):
 
 def parse_id(record):
     m = id_re.search(record)
-    return int(m.groups()[0]) if m is not None else None
+    return int(m.group(1)) if m is not None else None
 
 
 def process_records(records, on_wake_up):
@@ -66,7 +66,7 @@ def part_2(records):
 
 
 def main(puzzle_input_f):
-    records = puzzle_input_f.read().split("\n")
+    records = puzzle_input_f.read().splitlines()
     records.sort()
 
     print("Part 1: ", part_1(records))
