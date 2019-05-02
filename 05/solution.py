@@ -13,7 +13,7 @@ def react_polymer(polymer):
             stack.pop()
         else:
             stack.append(unit)
-    return "".join(stack)
+    return stack
 
 
 def part_1(polymer):
