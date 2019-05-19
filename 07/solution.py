@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 
 
 def find_next_steps(steps, prereq_step_pairs):
