@@ -1,5 +1,19 @@
 def parse_entries(entries):
-    """
+    """ Find sum of all metadata entries (part 1) and the root node value (part 2)
+    from the list of entries in the license file.
+
+    Outline:
+    header = n_child, n_meta
+    n_child == 0 -> meta_total = sum(entries[:n_meta])
+    n_child > 0 -> meta_total = sum(children_meta_totals) + current_meta_total
+
+    1. Get header items from entries
+    2. Remove header items from entries and start meta_total at 0
+    3. For each child recursively call function with remaining entries, update
+        meta_total with returned value
+    4. Update meta_total with current node meta_total (i.e. n_child == 0 case)
+    5. return meta_total, remaining_entries
+
     Returns:
         (int, int): sum of all metadata entries, root node value - see puzzle
             description
@@ -37,20 +51,6 @@ def parse_entries(entries):
 
 
 def part_1(entries):
-    """
-    Basic premise:
-    header = n_child, n_meta
-    n_child == 0 -> meta_total = sum(entries[:n_meta])
-    n_child > 0 -> meta_total = sum(children_meta_totals) + current_meta_total
-
-    1. Get header items from entries
-    2. Remove header items from entries and start meta_total at 0
-    3. For each child recursively call function with remaining entries, update
-        meta_total with returned value
-    4. Update meta_total with current node meta_total (i.e. n_child == 0 case)
-    5. return meta_total, remaining_entries
-    """
-
     return parse_entries(entries)[0]
 
 
